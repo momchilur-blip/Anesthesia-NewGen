@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <style>
+        /*stiling the card box */
+        .clinical-card{
+            background-color: #232527;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 20px;
+            max-width: 350px;
+            font-family : sans-serif; 
+
+        .clinical-card label{
+                font-weight: bold;
+                font-size: 14px;
+            }
+        .clinical-card input,
+        .clinical-card select {
+                padding: 6px;
+                font-size: 14px;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                margin-top: 4px;
+            }
+        .clinical-card hr {
+            border: none;
+            border-top: 1px solid #e5e7eb;
+            margin: 15px 0;
+        }
+}
+    </style>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anesthesia dashboard</title>
+</head>
+<body style="background-color: #191919; color: #e6e6e6;">
+
+    <h1>Dashboard of main tools</h1>
+
+<div class="clinical-card">
+<h4>Биометрични данни и дихателни пътища</h3>
+<label>Възраст: </label>
+<input type="number" id="ageInput"value="40" style="width : 30px"> год.<br><br>
+
+<label>Височина: (см) </label>
+<input type="number" id="heightInput" value="175" style="width : 40px"> <br><br>
+<label>Актуално тегло: (кг) </label>
+<input type="number" id="weightInput" value="75"style="width : 30px" ><br><br>
+
+<label> Пол: </label>
+<select id="genderSelect">
+    <option value="male">Мъж</option>
+    <option value="female">Жена</option>
+</select>
+<hr>
+<strong> Идеално тегло :  </strong><span id="ibwResult"></span> кг <br>
+<strong>Lean Body Weight: </strong><span id="lbwResult"></span> кг
+<hr>
+<p>Tidal Volume (VT 6-9 mL/kg IBW): </strong> <span id="vtResult"></span> mL</p> 
+<p><strong>Приблизителен размер на ЕТТ:  </strong> <span id="ettResult"></span></p>
+
+</div>
+
+
+
+
+<dl><dt>Premedication (test for definition title)</dt> <dd>Drugs you give before Induction (test for definition description)</dd></dl>
+
+
+<p>Induction doses
+    <ul>
+    <li>hypnotics</li><li>relaxants</li> 
+    </ul>
+    
+<h4>Тук желая да изпробвам правенето на таблица</h4>
+<table bgcolor="white" align="center" width="400">
+    <tr bgcolor="black">
+        <th>Възраст</th>
+        <td align="center">40</th>
+        <td align="center">50</th>
+        <td align="center">60</th>
+        <td align="center">70</th>
+        <td align="center">80</th>
+    </tr>
+    <tr style="color: black" bgcolor="lightgray" align="center" >
+        <td align="center">et<b>Sevo</b>%</td>
+        <td id="cell-40"></td>
+        <td id="cell-50"></td>
+        <td id="cell-60"></td>
+        <td id="cell-70"></td>
+        <td id="cell-80"></td>
+    </tr>
+</table>
+
+<p>сложи тук как се променя МАС според това дали си приложил фентанил </p>
+
+
+<p>
+    <h3>Live-updating Sevo calclator</h3>
+</p>
+<p>Изчислен 1 MAC =  <span id="resultMAC"+etSevo% style="font-weight: bold; color:#7474ba;"></span> etSevo%</p>
+
+</body>
+</html>
+
+<script>
+    let baseMAC = 2.1; // 1 MAC za 40 godishen e 2.1 %
+    let baseAge = 40; // standard za vuzrasten
+    let ages = [40,50,60,70,80]; //лист за всички възрасти в таблицата
+//Matematika za vsichki MAC ustroistva 
+    function calculateMACForAge(age){
+         let decadesPast = (age - baseAge) / 10;
+         let calculatedMAC = baseMAC * Math.pow(0.94, decadesPast);
+         return calculatedMAC = calculatedMAC.toFixed(2) + "%"; // izchistvam do dva znaka sled zapetaqta
+    }
+//JOB 1 - POPULNI TABLICATA 
+ ages.forEach(function(age) {
+    let targetCell = document.getElementById("cell-"+age);
+    targetCell.innerText=calculateMACForAge(age);
+ }); 
+//JOB 2 - LIVE CALCULATOR
+ let ageInput = document.getElementById("ageInput");
+ let resultMAC = document.getElementById("resultMAC");
+ function updateCalculator(){
+    let currentAge = ageInput.value;
+    resultMAC.innerText = calculateMACForAge(currentAge);
+ }
+    updateCalculator();
+    ageInput.addEventListener("input", updateCalculator);
+
+//JS за антропометричните калкулатори
+//1. Наименоваме променливите
+let heightInput=document.getElementById("heightInput");
+let weightInput=document.getElementById("weightInput");
+let genderSelect=document.getElementById("genderSelect");
+
+let abwResult=document.getElementById("abwResult");
+let ibwResult=document.getElementById("ibwResult");
+let lbwResult=document.getElementById("lbwResult");
+let vtResult=document.getElementById("vtResult");
+let ettResult=document.getElementById("ettResult");
+
+//2. Основни функции на калкулаторите
+function calculateAnthropometrics(){
+    //Да разчете стойностите от попълването
+    let height=parseFloat(heightInput.value);
+    let weight=parseFloat(weightInput.value);
+    let gender=genderSelect.value;
+    // 2.2 Да провери дали са верни стойности
+    if (isNaN(height)||isNaN(weight)||height<=0||weight<=0){
+        return; //Излиза от функцията, ако са невалидни
+    }
+
+// 3. Сметки 
+let ibw;
+// Ideal weight - DeVine formula
+    if (gender==="male"){
+        ibw = 50 + 0.91*(height-152.4);
+    }else{
+        ibw=45.5 + 0.91*(height-152.4);
+    }
+let lbw;
+//Lean body weight - Boer formula
+if (gender ==="male"){
+    lbw = (0.407*weight)+(0.267*height)-19.2;
+}else{
+    lbw=(0.252*weight)+(0.473*height)-48.3;
+}
+
+let vtMin = Math.round(ibw*6);
+let vtMax = Math.round(ibw*8);
+let vtRange = vtMin + "-" + vtMax;
+let ett = (gender === "male") ? "8.0-8.5" : "7.0-7.5";
+
+
+
+//4. Изкарай резултатите на екрана, закръглени до една десетица след запетаята
+ibwResult.innerText=ibw.toFixed(1);
+lbwResult.innerText=lbw.toFixed(1);
+vtResult.innerText= vtRange;
+ettResult.innerText=ett;
+}
+
+//5. Прави сметки при зареждане на страницата
+calculateAnthropometrics();
+//Следи за промяна в менютата :
+heightInput.addEventListener("input", calculateAnthropometrics);
+weightInput.addEventListener("input", calculateAnthropometrics);
+genderSelect.addEventListener("change", calculateAnthropometrics);   
+
+
+</script>
