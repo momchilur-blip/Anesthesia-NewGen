@@ -1,0 +1,55 @@
+<p id="out"></p>
+<canvas id="chart"></canvas>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+<script>
+const doseMg = 35;
+const weightKg = 70;
+const vcL = 0.07 * weightKg;
+const clLPerMin = 0.32 * weightKg / 60;
+
+const tHalfAlpha = 2;
+const tHalfBeta = 21;
+const alpha = Math.log(2) / tHalfAlpha;
+const beta = Math.log(2) / tHalfBeta;
+
+const c0 = doseMg / vcL;
+const k10 = clLPerMin / vcL;
+const k21 = alpha * beta / k10;
+const A = c0 * (alpha - k21) / (alpha - beta);
+const B = c0 - A;
+
+const tHalfKe0 = 5.9;
+const ke0 = Math.log(2) / tHalfKe0;
+const ec90 = 1.13;
+const dt = 0.1;
+
+const cpPoints = [];
+const cePoints = [];
+let ce = 0;
+let peakCe = 0;
+let peakTime = 0;
+
+for (let t = 0; t <= 60; t += dt) {
+  const cp = A * Math.exp(-alpha * t) + B * Math.exp(-beta * t);
+  cpPoints.push({ x: t, y: cp });
+  cePoints.push({ x: t, y: ce });
+  if (ce > peakCe) {
+    peakCe = ce;
+    peakTime = t;
+  }
+  ce = ce + ke0 * (cp - ce) * dt;
+}
+
+document.getElementById("out").textContent =
+  `Peak Ce = ${peakCe.toFixed(2)} mg/L at ${peakTime.toFixed(1)} min`;
+
+new Chart(document.getElementById("chart"), {
+  type: "line",
+  data: { datasets: [
+    { label: "Cp", data: cpPoints, pointRadius: 0 },
+    { label: "Ce", data: cePoints, pointRadius: 0, borderDash: [6, 4] },
+    { label: "EC90", data: [{ x: 0, y: ec90 }, { x: 60, y: ec90 }], pointRadius: 0 }
+  ] },
+  options: { scales: { x: { type: "linear" }, y: { min: 0 } } }
+});
+</script>
