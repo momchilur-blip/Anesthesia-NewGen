@@ -1,5 +1,5 @@
 <p id="out"></p>
-<canvas id="chart"></canvas>
+<div style="height:420px"><canvas id="chart"></canvas></div>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
 <script>
 const doseMg = 35;
@@ -21,35 +21,60 @@ const B = c0 - A;
 const tHalfKe0 = 5.9;
 const ke0 = Math.log(2) / tHalfKe0;
 const ec90 = 1.13;
-const dt = 0.1;
+const dt = 0.01;
 
 const cpPoints = [];
 const cePoints = [];
 let ce = 0;
-let peakCe = 0;
-let peakTime = 0;
+let onset = null;
+let offset = null;
+let cpLast = null;
 
-for (let t = 0; t <= 60; t += dt) {
+for (let i = 0; i <= 60 / dt; i++) {
+  const t = i * dt;
   const cp = A * Math.exp(-alpha * t) + B * Math.exp(-beta * t);
-  cpPoints.push({ x: t, y: cp });
-  cePoints.push({ x: t, y: ce });
-  if (ce > peakCe) {
-    peakCe = ce;
-    peakTime = t;
+
+  if (i % 10 === 0) {
+    cpPoints.push({ x: t, y: cp });
+    cePoints.push({ x: t, y: ce });
   }
+
+  if (onset === null && ce >= ec90) { onset = t; }
+  if (ce >= ec90) { offset = t; }
+  if (cp >= ec90) { cpLast = t; }
+
   ce = ce + ke0 * (cp - ce) * dt;
 }
 
+const fmt = (v) => v === null ? "never" : v.toFixed(1) + " min";
 document.getElementById("out").textContent =
-  `Peak Ce = ${peakCe.toFixed(2)} mg/L at ${peakTime.toFixed(1)} min`;
+  `Onset (Ce reaches EC90): ${fmt(onset)} | Offset (Ce below EC90): ${fmt(offset)} | Cp below EC90: ${fmt(cpLast)}`;
+
+const mark = (label, t, color) => ({
+  type: "scatter",
+  label: label + (t === null ? "" : " " + t.toFixed(1) + " min"),
+  data: t === null ? [] : [{ x: t, y: ec90 }],
+  pointRadius: 8,
+  backgroundColor: color
+});
 
 new Chart(document.getElementById("chart"), {
   type: "line",
   data: { datasets: [
     { label: "Cp", data: cpPoints, pointRadius: 0 },
     { label: "Ce", data: cePoints, pointRadius: 0, borderDash: [6, 4] },
-    { label: "EC90", data: [{ x: 0, y: ec90 }, { x: 60, y: ec90 }], pointRadius: 0 }
+    { label: "EC90", data: [{ x: 0, y: ec90 }, { x: 60, y: ec90 }], pointRadius: 0, borderColor: "gray" },
+    mark("Onset", onset, "green"),
+    mark("Offset", offset, "red")
   ] },
-  options: { scales: { x: { type: "linear" }, y: { min: 0 } } }
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: "nearest", axis: "x", intersect: false },
+    scales: {
+      x: { type: "linear", min: 0, max: 60, ticks: { stepSize: 5 }, title: { display: true, text: "Time (min)" } },
+      y: { min: 0, title: { display: true, text: "mg/L" } }
+    }
+  }
 });
 </script>
